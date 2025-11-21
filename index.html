@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AirCalc - Калькулятор мощности кондиционера</title>
+  <style>
+    body { font-family: "Inter", "Helvetica Neue", Arial, sans-serif; margin:0; background:linear-gradient(135deg, #e0f2fe 0%, #cffafe 100%);}
+    .app-container { max-width:480px; margin:40px auto; background:#fff; border-radius:16px; box-shadow:0 10px 30px rgba(0,0,0,0.06);}
+    .screen { display:none; padding:32px 16px; }
+    .screen.active { display:block;}
+    .welcome-logo{font-size:80px;margin-bottom:20px;}
+    .btn { padding:12px 24px; background:#0ea5e9; color:#fff; border:none; border-radius:8px; cursor:pointer; font-weight:600; font-size:16px; }
+    .card { background:#f2f8fc; border-radius:12px; padding:20px; margin-bottom:18px; }
+    .result-block { background:#e0f2fe; border-left:4px solid #0ea5e9; padding:16px; border-radius:12px; margin-bottom:18px;}
+    label { font-size:14px; font-weight:600; color:#355; }
+    input,select { margin:7px 0 16px 0; width:100%; padding:8px; border-radius:6px; border:1px solid #aee; }
+    .radio-group,.checkbox-group { margin-bottom:16px; }
+    .radio-group label, .checkbox-group label { display:block; margin-bottom:6px;}
+    .button-group { display:flex; gap:10px; }
+    .recommendation-text{background:rgba(16,185,129,0.1);border-left:4px solid #10b981;padding:10px 16px;border-radius:8px;font-size:14px;}
+    .tips-block{background:rgba(245,158,11,0.1);border-left:4px solid #F59E0B;padding:10px;border-radius:8px;margin-top:12px;}
+    .tips-block li{margin-bottom:6px;margin-left:18px;}
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <!-- Welcome Screen -->
+    <div class="screen active welcome-screen" id="welcome">
+      <div class="welcome-logo">❄️</div>
+      <div style="font-size:28px;font-weight:700;margin-bottom:10px;">🌊 AirCalc</div>
+      <div style="font-size:17px;">Калькулятор мощности кондиционера</div>
+      <div style="margin-bottom:30px;color:#4a6;">Профессиональный расчет мощности и рекомендации</div>
+      <button class="btn" onclick="switchScreen('calculator')">Начать расчет</button>
+    </div>
+    <!-- Calculator Screen -->
+    <div class="screen" id="calculator">
+      <h1 style="font-size:22px;margin-bottom:20px;">📋 Расчет мощности</h1>
+      <div class="card">
+        <div style="font-size:15px;font-weight:700;margin-bottom:9px;">📐 Параметры помещения</div>
+        <label>Площадь (м²)</label>
+        <input type="number" id="area" value="26" min="1" max="500">
+        <label>Высота потолка (м)</label>
+        <input type="number" id="height" value="2.75" min="1" max="10" step="0.05">
+        <label>☀️ Освещенность</label>
+        <div class="radio-group">
+          <label><input type="radio" name="sunlight" value="30" checked> Затененное (окна на север)</label>
+          <label><input type="radio" name="sunlight" value="35"> Среднее (восток/запад)</label>
+          <label><input type="radio" name="sunlight" value="40"> Яркое (юг)</label>
+        </div>
+      </div>
+      <div class="card">
+        <div style="font-size:15px;font-weight:700;margin-bottom:9px;">👥 Люди в помещении</div>
+        <label>Количество людей: <span id="peopleCount">2</span></label>
+        <input type="range" id="people" min="0" max="20" value="2" style="width:100%;" oninput="document.getElementById('peopleCount').textContent=this.value;">
+        <label>🚶 Уровень активности</label>
+        <div class="radio-group">
+          <label><input type="radio" name="activity" value="0.1"> 😴 Низкая (отдых)</label>
+          <label><input type="radio" name="activity" value="0.13" checked> 🚶 Средняя (дом)</label>
+          <label><input type="radio" name="activity" value="0.15"> 💼 Высокая (офис)</label>
+          <label><input type="radio" name="activity" value="0.2"> 🏃 Очень высокая (спорт)</label>
+        </div>
+      </div>
+      <div class="card">
+        <div style="font-size:15px;font-weight:700;margin-bottom:9px;">🔧 Бытовая техника</div>
+        <div class="checkbox-group">
+          <label><input type="checkbox" class="device" data-power="0.3"> 💻 Компьютер (+0.3 кВт)</label>
+          <label><input type="checkbox" class="device" data-power="0.2"> 📺 Телевизор (+0.2 кВт)</label>
+          <label><input type="checkbox" class="device" data-power="0.05"> ❄️ Холодильник (+0.05 кВт)</label>
+        </div>
+        <label>Другая техника (Вт)</label>
+        <input type="number" id="otherPower" value="0" min="0">
+      </div>
+      <div class="card">
+        <div style="font-size:15px;font-weight:700;margin-bottom:9px;">➕ Дополнительные факторы</div>
+        <div class="checkbox-group">
+          <label><input type="checkbox" class="factor" data-factor="top_floor" data-multiplier="0.15"> 🏢 Верхний этаж (+15%)</label>
+          <label><input type="checkbox" class="factor" data-factor="corner" data-multiplier="0.10"> 📐 Угловая комната (+10%)</label>
+          <label><input type="checkbox" class="factor" data-factor="kitchen" data-multiplier="0.20"> 🍳 Кухня (+20%)</label>
+          <label><input type="checkbox" class="factor" data-factor="windows" data-multiplier="0.15"> 🪟 Большое остекление (+15%)</label>
+        </div>
+      </div>
+      <button class="btn" onclick="calculate()" style="margin-top:18px;">Рассчитать</button>
+    </div>
+    <!-- Results Screen -->
+    <div class="screen" id="results">
+      <h1 style="font-size:22px;margin-bottom:18px;text-align:center;">📊 Результаты расчета</h1>
+      <div class="result-block" id="modelBlock">
+        <div style="font-size:16px;font-weight:700;">✅ РЕКОМЕНДУЕМАЯ МОДЕЛЬ</div>
+        <div style="font-size:19px;font-weight:700;color:#0ea5e9;" id="modelName">Модель 24</div>
+        <div id="modelDetails"></div>
+        <div style="margin-top:10px;"><strong>📊 Ваш расчет:</strong><br>
+          Требуемая мощность: <strong><span id="resultQ">6.82</span> кВт</strong><br>
+          Рекомендуемый диапазон: <strong><span id="resultRange">6.48 - 7.84</span> кВт</strong>
+        </div>
+        <div class="recommendation-text" id="recText">
+          ✓ Эта модель подходит для Ваших условий.
+        </div>
+      </div>
+      <div id="largeBlock" style="display:none;">
+        <div class="result-block">
+          <div style="color:#b00;font-size:16px;font-weight:700;">⚠️ Рекомендация для большого помещения</div>
+          <div id="largeRoomText"></div>
+          <div style="margin-top:14px;font-weight:600;">Рекомендуемая мощность: <span id="semiPower"></span> кВт</div>
+          <div style="margin:10px 0 0 0;">Бытовых настенных кондиционеров такой мощности<br>не бывает.
+            <br>Рекомендуем рассмотреть полупромышленные кондиционеры: <br>кассетные, канальные, колонные, напольно-потолочные.
+          </div>
+        </div>
+      </div>
+      <div style="margin-bottom:18px;margin-top:8px;">
+        <button class="btn" onclick="toggleDetails()">▼ Как рассчитано?</button>
+        <div id="calcDetails" style="display:none;color:#355;background:#e9f7fd;padding:8px;border-radius:6px;font-size:13px;margin-top:8px;"></div>
+      </div>
+      <div class="tips-block">
+        <div style="font-weight:600;">💡 РЕКОМЕНДАЦИИ ЭКСПЕРТОВ:</div>
+        <ul>
+          <li>В среднем 1 кВт на 10 м² площади</li>
+          <li>Запас мощности компенсирует экстремальную жару</li>
+          <li>Для кухни выбирайте на 20-30% мощнее обычного</li>
+          <li>Верхний этаж и угловые комнаты требуют больше мощности</li>
+          <li>Большое остекление повышает требования к мощности</li>
+        </ul>
+      </div>
+      <div class="button-group" style="margin-top:20px;">
+        <button class="btn" style="background:#14b8a6;" onclick="switchScreen('calculator')">Новый расчет</button>
+      </div>
+    </div>
+  </div>
+  <script>
+    // База моделей кондиционеров (max 10кВт — бытовые)
+    const acModels = [
+      {marking: 20, model: 7, btu: 7000, kw: 2.1, area: 20},
+      {marking: 25, model: 9, btu: 9000, kw: 2.6, area: 25},
+      {marking: 35, model: 12, btu: 12000, kw: 3.5, area: 35},
+      {marking: 50, model: 18, btu: 18000, kw: 5.3, area: 50},
+      {marking: 71, model: 24, btu: 24000, kw: 7.0, area: 70},
+      {marking: 80, model: 28, btu: 28000, kw: 8.2, area: 80},
+      {marking: 100, model: 36, btu: 36000, kw: 10.6, area: 110}
+      // Только бытовые ≤10 кВт
+    ];
+    function switchScreen(screen) {
+      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+      document.getElementById(screen).classList.add('active');
+    }
+    function calculate() {
+      // Получаем значения
+      const area = parseFloat(document.getElementById('area').value);
+      const height = parseFloat(document.getElementById('height').value);
+      const sunlight = parseFloat(document.querySelector('input[name="sunlight"]:checked').value);
+      const people = parseInt(document.getElementById('people').value);
+      const activity = parseFloat(document.querySelector('input[name="activity"]:checked').value);
+      const otherPower = parseFloat(document.getElementById('otherPower').value) || 0;
+      // Q1 = помещение
+      const Q1 = (area * height * sunlight) / 1000;
+      // Q2 = люди
+      const Q2 = people * activity;
+      // Q3 = техника
+      let Q3 = 0;
+      document.querySelectorAll('.device:checked').forEach(device =>{
+        Q3 += parseFloat(device.dataset.power);
+      });
+      Q3 += (otherPower * 0.3) / 1000;
+      let Q = Q1 + Q2 + Q3;
+      document.querySelectorAll('.factor:checked').forEach(factor =>{
+        Q *= (1 + parseFloat(factor.dataset.multiplier));
+      });
+      const Q_min = Q * 0.95;
+      const Q_max = Q * 1.15;
+
+      // Модель бытового кондиционера (только если Q <= 10кВт)
+      let recommended = acModels[0];
+      let modelDetails = '';
+      if (Q <= 10) {
+        for (let model of acModels) {
+          if (model.kw >= Q_min && model.kw <= 10.6) {
+            recommended = model;
+            if (model.kw >= Q) break;
+          }
+        }
+        modelDetails = `<strong>BTU:</strong> ${recommended.btu}<br>
+                        <strong>Мощность:</strong> ${recommended.kw} кВт<br>
+                        <strong>Для площади:</strong> до ${recommended.area} м²`;
+        document.getElementById("recText").textContent =
+          "✓ Эта модель подходит для Ваших условий. Для большего запаса мощности выбирайте следующее значение.";
+        document.getElementById("largeBlock").style.display = "none";
+        document.getElementById("modelName").textContent = `Модель ${recommended.model}`;
+      } else {
+        // Если больше 10кВт — бытовых нет, показываем только рекомендацию
+        let nextPower = Math.min(Math.ceil(Q / 2)*2, 30); // шаг 2 кВт, но не больше 30!
+        modelDetails = `<strong>BTU:</strong> —
+                        <br><strong>Мощность:</strong> —<br>
+                        <strong>Для площади:</strong> —`;
+        document.getElementById("recText").textContent =
+          "Бытовых настенных кондиционеров такой мощности не бывает. Рекомендуем рассмотреть полупромышленные кондиционеры: канальные, кассетные, колонные или напольно-потолочные — соответствующей мощности.";
+        document.getElementById("largeBlock").style.display = "block";
+        document.getElementById("modelName").textContent = `Мощность ≥ ${nextPower} кВт`;
+        document.getElementById("semiPower").textContent = nextPower.toString();
+        document.getElementById("largeRoomText").textContent =
+          `Для вашего помещения требуется кондиционер мощностью не менее ${Q.toFixed(2)} кВт. Ориентируйтесь на полупромышленные модели.`;
+      }
+      document.getElementById("modelDetails").innerHTML = modelDetails;
+      document.getElementById("resultQ").textContent = Q.toFixed(2);
+      document.getElementById("resultRange").textContent = `${Q_min.toFixed(2)} - ${Q_max.toFixed(2)}`;
+
+      // Детали для расчёта
+      let detailsText = `Q₁ (помещение) = ${area} × ${height} × ${sunlight} / 1000 = ${Q1.toFixed(2)} кВт
+`
+                      + `Q₂ (люди) = ${people} × ${activity} = ${Q2.toFixed(2)} кВт
+`
+                      + `Q₃ (техника) = ${Q3.toFixed(2)} кВт
+
+`
+                      + `Q = ${Q.toFixed(2)} кВт
+`
+                      + `Диапазон: ${Q_min.toFixed(2)} - ${Q_max.toFixed(2)} кВт`;
+      document.getElementById('calcDetails').textContent = detailsText;
+
+      switchScreen('results');
+    }
+    function toggleDetails() {
+      var cd = document.getElementById("calcDetails");
+      cd.style.display = (cd.style.display==="none" || !cd.style.display) ? "block":"none";
+    }
+  </script>
+</body>
+</html>
